@@ -2851,7 +2851,7 @@ const App = {
                             </div>
                         ` : `
                             <div class="wb-ans-input-wrapper">
-                                <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm is-active-input" placeholder="${placeholderText}" value="${savedVal}">
+                                <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm is-active-input" placeholder="${placeholderText}" value="${savedVal}" inputmode="none" autocomplete="off">
                                 <button class="btn-wb-submit-sm ripple" id="btn-submit-${groupKey}-${q.id}" title="Kirim Jawaban Soal #${q.id}">
                                     <span>Kirim</span>
                                     <i data-lucide="send"></i>
@@ -3028,6 +3028,14 @@ const App = {
         renderGroupView('group2');
         setupVirtualKeyboard('group1');
         setupVirtualKeyboard('group2');
+
+        // Prevent touchmove events in group columns from scrolling adjacent elements or parent page
+        container.querySelectorAll('.wb-group-column').forEach(col => {
+            col.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+        });
+
         updateGroupProgress();
 
         // Panduan Pengerjaan Modal Event Listeners

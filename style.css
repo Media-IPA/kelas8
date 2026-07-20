@@ -2025,6 +2025,8 @@ section {
     padding: 0.75rem;
     height: calc(100% - 58px);
     overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
 }
 
 .wb-group-column {
@@ -2035,6 +2037,8 @@ section {
     border: 1px solid rgba(255, 255, 255, 0.06);
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
 }
 
 .wb-col-top {
@@ -2629,6 +2633,9 @@ section {
     padding: 0.75rem;
     display: flex;
     flex-direction: column;
+    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
 }
 
 .wb-q-active-card {
