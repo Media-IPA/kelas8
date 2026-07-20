@@ -3187,6 +3187,19 @@ const App = {
             AudioSynth.playTriumph();
             this.whiteboardState[groupKey][q.id] = true;
 
+            // Calculate remaining unlocked questions
+            const lockedCount = Object.keys(this.whiteboardState[groupKey]).filter(k => this.whiteboardState[groupKey][k]).length;
+            const remainingCount = TP1_QUESTIONS.length - lockedCount;
+
+            // Announce voice notification for correct answer
+            let voiceMsg = '';
+            if (remainingCount > 0) {
+                voiceMsg = `${gName} benar! Tersisa ${remainingCount} soal lagi.`;
+            } else {
+                voiceMsg = `Luarrr biasa! ${gName} telah menyelesaikan seluruh 25 soal!`;
+            }
+            this.speakVoiceNotification(voiceMsg);
+
             // Auto-advance target question for virtual keyboard to next unlocked question
             const nextUnlocked = TP1_QUESTIONS.find(item => item.id > q.id && !this.whiteboardState[groupKey][item.id]) 
                               || TP1_QUESTIONS.find(item => !this.whiteboardState[groupKey][item.id]);
@@ -3206,10 +3219,33 @@ const App = {
                 "👏 SANGAT BAGUS! Poin Berhasil Diraih!"
             ];
             const praiseText = praises[(q.id - 1) % praises.length];
-            this.showWhiteboardToast(`${praiseText} (${gName} - Soal #${q.id})`, false);
+            this.showWhiteboardToast(`${praiseText} (${gName} - Tersisa ${remainingCount} Soal)`, false);
         } else {
             AudioSynth.playWrong();
+            const voiceMsg = `${gName} salah. Coba periksa kembali jawabannya.`;
+            this.speakVoiceNotification(voiceMsg);
+
             this.showWhiteboardToast(`❌ Jawaban ${gName} untuk Soal #${q.id} belum tepat. Periksa kembali LKPD kalian!`, true);
+        }
+    },
+
+    speakVoiceNotification(text) {
+        if ('speechSynthesis' in window) {
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.1;
+
+                const voices = window.speechSynthesis.getVoices();
+                const idVoice = voices.find(v => v.lang && (v.lang.includes('id') || v.lang.includes('ID')));
+                if (idVoice) utterance.voice = idVoice;
+
+                window.speechSynthesis.speak(utterance);
+            } catch (err) {
+                console.warn('SpeechSynthesis error:', err);
+            }
         }
     },
 
