@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,33 +28,18 @@
 
     <!-- 1. COVER SCREEN -->
     <section id="cover-screen" class="active-screen">
-        <div class="glow-bg"></div>
-        <div class="cover-content">
-            <div class="badge-cover animate-fade-in">
-                <i data-lucide="atom" class="icon-spin"></i>
-                <span>MEDIA PEMBELAJARAN INTERAKTIF</span>
-            </div>
-            <h1 class="cover-title animate-title">
-                IPA KELAS <span class="glow-text">VIII</span>
-            </h1>
-            <p class="cover-subtitle animate-fade-in-delayed">
-                Jelajahi keajaiban sains melalui visualisasi interaktif, simulasi canggih, dan tantangan seru yang menyenangkan.
-            </p>
-            <div class="cover-actions animate-fade-in-delayed">
-                <button id="btn-start" class="btn-primary ripple">
-                    <span>Mulai Petualangan</span>
-                    <i data-lucide="play"></i>
-                </button>
-                <button id="btn-fullscreen-cover" class="btn-fullscreen-cover ripple" title="Layar Penuh">
-                    <i data-lucide="maximize" id="fs-cover-icon"></i>
-                    <span>Layar Penuh</span>
-                </button>
-            </div>
-        </div>
-        <div class="cover-footer">
-            <p>&copy; 2026 Media Pembelajaran IPA SMP Kelas 8. Dibuat dengan &hearts; untuk Pendidikan.</p>
+        <div class="cover-actions-overlay">
+            <button id="btn-start" class="btn-primary ripple">
+                <span>Buka Aplikasi</span>
+                <i data-lucide="play"></i>
+            </button>
+            <button id="btn-fullscreen-cover" class="btn-fullscreen-cover ripple" title="Layar Penuh">
+                <i data-lucide="maximize" id="fs-cover-icon"></i>
+                <span>Layar Penuh</span>
+            </button>
         </div>
     </section>
+
 
     <!-- 2. MAIN DASHBOARD SCREEN -->
     <section id="dashboard-screen" class="hidden">
@@ -71,6 +56,9 @@
                 </button>
                 <button id="btn-sound-toggle" class="btn-icon" title="Toggle Suara">
                     <i data-lucide="volume-2"></i>
+                </button>
+                <button id="btn-theme-toggle" class="btn-icon" title="Toggle Tema">
+                    <i data-lucide="sun" id="theme-icon"></i>
                 </button>
                 <button id="btn-fullscreen-header" class="btn-icon" title="Toggle Layar Penuh">
                     <i data-lucide="maximize" id="fs-header-icon"></i>

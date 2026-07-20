@@ -194,6 +194,12 @@ const CHAPTERS_DATA = {
         badgeIcon: "🔬",
         slides: [
             {
+                title: "Apersepsi: Mengenal Sel",
+                content: ``,
+                visualType: "apersepsi-sel",
+                visualTitle: "Apersepsi — Mengenal Sel"
+            },
+            {
                 title: "1. Pengertian Sel",
                 content: `
                     <p>Sel adalah <strong>unit terkecil dari makhluk hidup</strong> yang mampu menjalankan fungsi kehidupan, seperti metabolisme, pertumbuhan, reproduksi, dan respons terhadap rangsangan.</p>
@@ -1168,6 +1174,36 @@ const App = {
         // Init Background Particles
         ParticleEngine.init();
         ParticleEngine.setTheme('default');
+
+        // Init Theme from localStorage
+        this.initTheme();
+    },
+
+    // Theme Management
+    initTheme() {
+        const saved = localStorage.getItem('ipa-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
+        this.updateThemeIcon(saved);
+    },
+
+    toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('ipa-theme', next);
+        this.updateThemeIcon(next);
+    },
+
+    updateThemeIcon(theme) {
+        const icon = document.getElementById('theme-icon');
+        if (!icon) return;
+        if (theme === 'light') {
+            icon.setAttribute('data-lucide', 'moon');
+        } else {
+            icon.setAttribute('data-lucide', 'sun');
+        }
+        lucide.createIcons();
     },
 
     bindEvents() {
@@ -1175,7 +1211,18 @@ const App = {
         document.getElementById('btn-start').addEventListener('click', () => {
             AudioSynth.playSweep();
             this.switchScreen('dashboard');
+            // Langsung tampilkan modal pemilihan BAB
+            setTimeout(() => this.showChaptersModal(true), 300);
         });
+
+        // Theme Toggle Button
+        const btnTheme = document.getElementById('btn-theme-toggle');
+        if (btnTheme) {
+            btnTheme.addEventListener('click', () => {
+                AudioSynth.playClick();
+                this.toggleTheme();
+            });
+        }
 
         // Open Chapters Modal Button
         document.getElementById('btn-open-chapters').addEventListener('click', () => {
@@ -1331,12 +1378,12 @@ const App = {
             </div>
         `;
 
-        // 3. Render Visual Simulator Panel & Handle Full-Width for Interactive Whiteboard (Slide 4)
+        // 3. Render Visual Simulator Panel & Handle Full-Width for Interactive Whiteboard & Apersepsi
         const wsGrid = document.querySelector('.workspace-grid');
         const contentPanel = document.querySelector('.content-panel');
-        const isWhiteboardSlide = (slide.visualType === 'interactive-whiteboard-tp1');
+        const isFullWidthSlide = (slide.visualType === 'interactive-whiteboard-tp1' || slide.visualType === 'apersepsi-sel');
 
-        if (isWhiteboardSlide) {
+        if (isFullWidthSlide) {
             if (wsGrid) wsGrid.classList.add('wb-fullwidth-mode');
             if (contentPanel) contentPanel.classList.add('hidden');
         } else {
@@ -1468,6 +1515,93 @@ const App = {
                         this.openImageModal(imgSrc, imgCaption);
                     });
                 }
+                break;
+
+            case 'apersepsi-sel':
+                container.innerHTML = `
+                <div class="apersepsi-fullpage">
+
+                    <!-- HEADER -->
+                    <div class="ap-header">
+                        <div class="ap-badge">🔬 APERSEPSI</div>
+                        <h1 class="ap-main-title">Sebelum Belajar Sel…<br><span>Bayangkan Ini Dulu!</span></h1>
+                        <p class="ap-intro">Pernah lihat bangunan? Nah, <strong>sel</strong> itu mirip dengan bata pada bangunan — tapi untuk makhluk hidup!</p>
+                    </div>
+
+                    <!-- ANALOGI CARDS -->
+                    <div class="ap-cards">
+
+                        <div class="ap-card" style="--ap-color:#10b981">
+                            <div class="ap-card-icon">🏠</div>
+                            <div class="ap-card-body">
+                                <div class="ap-card-label">ANALOGI</div>
+                                <div class="ap-card-title">Rumah dari Bata</div>
+                                <div class="ap-card-desc">
+                                    Rumah dibangun dari ribuan <strong>bata kecil</strong>.<br>
+                                    Tubuhmu dibangun dari triliunan <strong>sel kecil</strong>.<br>
+                                    <em>Satu bata ≈ satu sel!</em>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ap-card" style="--ap-color:#6366f1">
+                            <div class="ap-card-icon">🧩</div>
+                            <div class="ap-card-body">
+                                <div class="ap-card-label">ANALOGI</div>
+                                <div class="ap-card-title">Puzzle Raksasa</div>
+                                <div class="ap-card-desc">
+                                    Bayangkan tubuhmu adalah <strong>puzzle</strong>.<br>
+                                    Setiap keping puzzle = <strong>satu sel</strong>.<br>
+                                    Tanpa kepingnya, gambar tidak akan utuh!
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ap-card" style="--ap-color:#f59e0b">
+                            <div class="ap-card-icon">🏙️</div>
+                            <div class="ap-card-body">
+                                <div class="ap-card-label">ANALOGI</div>
+                                <div class="ap-card-title">Kota Mini yang Hidup</div>
+                                <div class="ap-card-desc">
+                                    Sel itu seperti <strong>kota kecil</strong> yang lengkap:<br>
+                                    🏛️ Inti sel = Balai Kota (pusat perintah)<br>
+                                    🏭 Mitokondria = Pembangkit listrik<br>
+                                    🚪 Membran sel = Pintu gerbang kota
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- FAKTA KEREN -->
+                    <div class="ap-fact-bar">
+                        <div class="ap-fact">
+                            <span class="ap-fact-num">37,2 T</span>
+                            <span class="ap-fact-label">jumlah sel dalam tubuh manusia</span>
+                        </div>
+                        <div class="ap-fact-divider"></div>
+                        <div class="ap-fact">
+                            <span class="ap-fact-num">0,01 mm</span>
+                            <span class="ap-fact-label">rata-rata ukuran sel manusia</span>
+                        </div>
+                        <div class="ap-fact-divider"></div>
+                        <div class="ap-fact">
+                            <span class="ap-fact-num">200+</span>
+                            <span class="ap-fact-label">jenis sel berbeda di tubuh kita</span>
+                        </div>
+                    </div>
+
+                    <!-- PERTANYAAN PEMANTIK -->
+                    <div class="ap-question">
+                        <div class="ap-q-icon">💡</div>
+                        <div class="ap-q-text">
+                            <strong>Pertanyaan Pemantik:</strong>
+                            Jika satu sel rusak, apakah tubuhmu langsung sakit? Menurutmu, mengapa?
+                        </div>
+                    </div>
+
+                </div>
+                `;
                 break;
 
             case 'interactive-whiteboard-tp1':
