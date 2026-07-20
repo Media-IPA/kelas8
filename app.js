@@ -1298,6 +1298,12 @@ const App = {
             this.waveState.animId = null;
         }
 
+        // Restore normal grid layout
+        const wsGrid = document.querySelector('.workspace-grid');
+        const contentPanel = document.querySelector('.content-panel');
+        if (wsGrid) wsGrid.classList.remove('wb-fullwidth-mode');
+        if (contentPanel) contentPanel.classList.remove('hidden');
+
         this.updateDashboardStats();
         this.switchScreen('dashboard');
     },
@@ -1325,7 +1331,19 @@ const App = {
             </div>
         `;
 
-        // 3. Render Visual Simulator Panel
+        // 3. Render Visual Simulator Panel & Handle Full-Width for Interactive Whiteboard (Slide 4)
+        const wsGrid = document.querySelector('.workspace-grid');
+        const contentPanel = document.querySelector('.content-panel');
+        const isWhiteboardSlide = (slide.visualType === 'interactive-whiteboard-tp1');
+
+        if (isWhiteboardSlide) {
+            if (wsGrid) wsGrid.classList.add('wb-fullwidth-mode');
+            if (contentPanel) contentPanel.classList.add('hidden');
+        } else {
+            if (wsGrid) wsGrid.classList.remove('wb-fullwidth-mode');
+            if (contentPanel) contentPanel.classList.remove('hidden');
+        }
+
         const viewport = document.getElementById('viewport-content');
         document.getElementById('panel-title').innerText = slide.visualTitle;
         
@@ -2349,6 +2367,12 @@ const App = {
                 group2: {}
             };
         }
+        if (!this.whiteboardActiveQ) {
+            this.whiteboardActiveQ = {
+                group1: 1,
+                group2: 1
+            };
+        }
         if (!this.whiteboardExpanded) {
             this.whiteboardExpanded = { group1: {}, group2: {} };
             for (let i = 1; i <= TP1_QUESTIONS.length; i++) {
@@ -2373,6 +2397,14 @@ const App = {
                     <div class="wb-center-title">
                         <i data-lucide="sparkles" class="icon-spin"></i>
                         <span>Papan Tulis Interaktif TP.1</span>
+                        <button id="btn-show-guide-modal" class="btn-guide-toggle ripple" title="Buka Panduan Pengerjaan LKPD">
+                            <i data-lucide="help-circle"></i>
+                            <span>Panduan Pengerjaan</span>
+                        </button>
+                        <button id="btn-wb-fullscreen" class="btn-fs-wb ripple" title="Toggle Layar Penuh Papan Tulis">
+                            <i data-lucide="maximize" id="wb-fs-icon"></i>
+                            <span>Layar Penuh</span>
+                        </button>
                         <button id="btn-open-pdf-top" class="btn-pdf-toggle ripple" title="Buka / Cetak Dokumen LKPD PDF">
                             <i data-lucide="file-text"></i>
                             <span>Cetak LKPD PDF</span>
@@ -2392,6 +2424,48 @@ const App = {
 
                 <!-- Toast Alert Notification Container -->
                 <div id="wb-toast-area" class="wb-toast-area"></div>
+
+                <!-- Panduan Pengerjaan Modal -->
+                <div id="wb-guide-modal" class="modal-overlay hidden">
+                    <div class="modal-container card animate-zoom-in" style="max-width: 680px;">
+                        <button id="btn-close-guide-modal" class="btn-close">&times;</button>
+                        <div class="modal-header">
+                            <i data-lucide="book-open" class="header-icon" style="color: #38bdf8;"></i>
+                            <div>
+                                <h3>Panduan Pengerjaan LKPD TP.1</h3>
+                                <p>Petunjuk penggunaan Papan Tulis Interaktif untuk Kelompok 1 & 2</p>
+                            </div>
+                        </div>
+                        <div class="modal-body" style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6;">
+                            <ol style="margin-left: 1.2rem; margin-bottom: 1rem; display:flex; flex-direction:column; gap:0.5rem;">
+                                <li><strong>Cetak / Unduh LKPD Manual:</strong> Cetak atau unduh dokumen <strong>LKPD Manual TP.1 (PDF)</strong> terlebih dahulu untuk dibahas bersama tim.</li>
+                                <li><strong>Kerjakan Bersama Kelompok:</strong> Diskusikan dan kerjakan 25 soal evaluasi konsep sel pada lembar fisik/manual.</li>
+                                <li><strong>Input Jawaban:</strong> Salin dan masukkan jawaban kelompokmu menggunakan <strong>Keyboard Layar Interaktif</strong> masing-masing kelompok!</li>
+                            </ol>
+                            <div class="pdf-download-card" style="margin-bottom: 0.8rem;">
+                                <div class="pdf-info">
+                                    <i data-lucide="file-text" class="pdf-icon"></i>
+                                    <div>
+                                        <h4>Dokumen LKPD TP.1 (Konsep Sel)</h4>
+                                        <p>Format PDF Siap Cetak • 25 Soal Evaluasi</p>
+                                    </div>
+                                </div>
+                                <button id="btn-download-pdf-modal-guide" class="btn-pdf-download ripple">
+                                    <i data-lucide="download"></i>
+                                    <span>Buka / Unduh LKPD PDF</span>
+                                </button>
+                            </div>
+                            <div class="highlight-box" style="--slide-accent: var(--color-bio-sel); margin-top: 0.8rem;">
+                                <span>Fitur Papan Tulis Interaktif</span>
+                                <ul style="margin-left: 1rem; margin-top: 0.4rem;">
+                                    <li>🔒 <strong>Sistem Verifikasi:</strong> Jawaban yang benar akan otomatis <strong>TERKUNCI</strong>.</li>
+                                    <li>⚠️ <strong>Umpan Balik Instan:</strong> Jawaban salah akan menampilkan notifikasi agar dapat diperbaiki.</li>
+                                    <li>👥 <strong>Multi-Kelompok:</strong> Pengerjaan dibagi 2 kelompok dengan area scroll & keyboard independen.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Kunci Jawaban Modal -->
                 <div id="wb-key-modal" class="modal-overlay hidden">
@@ -2440,22 +2514,146 @@ const App = {
                     <!-- KELOMPOK 1 COLUMN -->
                     <div class="wb-group-column g1-theme">
                         <div class="wb-col-top">
-                            <span class="wb-col-badge g1-bg">Kelompok 1</span>
-                            <span class="wb-col-sub">Lembar Jawaban Papan Tulis</span>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span class="wb-col-badge g1-bg">Kelompok 1</span>
+                                <span class="wb-col-sub" id="kb-target-g1">Target Keyboard: Soal #1</span>
+                            </div>
+                            <button class="btn-kb-toggle ripple" id="btn-toggle-kb-g1" title="Sembunyikan/Tampilkan Keyboard Kelompok 1">
+                                <i data-lucide="keyboard"></i>
+                            </button>
                         </div>
-                        <div class="wb-scroll-container" id="wb-scroll-g1">
-                            <!-- 25 Questions rendered for Group 1 -->
+
+                        <!-- WORDWALL NUMBER TILES GRID (1-25) -->
+                        <div class="wb-tiles-grid" id="wb-tiles-g1"></div>
+
+                        <!-- ACTIVE QUESTION VIEWER -->
+                        <div class="wb-active-q-container" id="wb-active-q-g1"></div>
+
+                        <!-- VIRTUAL KEYBOARD KELOMPOK 1 -->
+                        <div class="wb-keyboard-panel g1-kb" id="kb-panel-g1">
+                            <div class="kb-rows">
+                                <div class="kb-row">
+                                    <button class="kb-key key-opt" data-key="A">A</button>
+                                    <button class="kb-key key-opt" data-key="B">B</button>
+                                    <button class="kb-key key-opt" data-key="C">C</button>
+                                    <button class="kb-key key-opt" data-key="D">D</button>
+                                    <button class="kb-key key-opt" data-key="E">E</button>
+                                    <button class="kb-key key-num" data-key="1">1</button>
+                                    <button class="kb-key key-num" data-key="2">2</button>
+                                    <button class="kb-key key-num" data-key="3">3</button>
+                                    <button class="kb-key key-num" data-key="4">4</button>
+                                    <button class="kb-key key-num" data-key="5">5</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="Q">Q</button>
+                                    <button class="kb-key" data-key="W">W</button>
+                                    <button class="kb-key" data-key="E">E</button>
+                                    <button class="kb-key" data-key="R">R</button>
+                                    <button class="kb-key" data-key="T">T</button>
+                                    <button class="kb-key" data-key="Y">Y</button>
+                                    <button class="kb-key" data-key="U">U</button>
+                                    <button class="kb-key" data-key="I">I</button>
+                                    <button class="kb-key" data-key="O">O</button>
+                                    <button class="kb-key" data-key="P">P</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="A">A</button>
+                                    <button class="kb-key" data-key="S">S</button>
+                                    <button class="kb-key" data-key="D">D</button>
+                                    <button class="kb-key" data-key="F">F</button>
+                                    <button class="kb-key" data-key="G">G</button>
+                                    <button class="kb-key" data-key="H">H</button>
+                                    <button class="kb-key" data-key="J">J</button>
+                                    <button class="kb-key" data-key="K">K</button>
+                                    <button class="kb-key" data-key="L">L</button>
+                                    <button class="kb-key key-num" data-key="0">0</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="Z">Z</button>
+                                    <button class="kb-key" data-key="X">X</button>
+                                    <button class="kb-key" data-key="C">C</button>
+                                    <button class="kb-key" data-key="V">V</button>
+                                    <button class="kb-key" data-key="B">B</button>
+                                    <button class="kb-key" data-key="N">N</button>
+                                    <button class="kb-key" data-key="M">M</button>
+                                    <button class="kb-key key-action key-space" data-key="SPACE">Space</button>
+                                    <button class="kb-key key-action key-back" data-key="BACKSPACE">⌫</button>
+                                    <button class="kb-key key-action key-send" data-key="SUBMIT">↵ Kirim</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- KELOMPOK 2 COLUMN -->
                     <div class="wb-group-column g2-theme">
                         <div class="wb-col-top">
-                            <span class="wb-col-badge g2-bg">Kelompok 2</span>
-                            <span class="wb-col-sub">Lembar Jawaban Papan Tulis</span>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <span class="wb-col-badge g2-bg">Kelompok 2</span>
+                                <span class="wb-col-sub" id="kb-target-g2">Target Keyboard: Soal #1</span>
+                            </div>
+                            <button class="btn-kb-toggle ripple" id="btn-toggle-kb-g2" title="Sembunyikan/Tampilkan Keyboard Kelompok 2">
+                                <i data-lucide="keyboard"></i>
+                            </button>
                         </div>
-                        <div class="wb-scroll-container" id="wb-scroll-g2">
-                            <!-- 25 Questions rendered for Group 2 -->
+
+                        <!-- WORDWALL NUMBER TILES GRID (1-25) -->
+                        <div class="wb-tiles-grid" id="wb-tiles-g2"></div>
+
+                        <!-- ACTIVE QUESTION VIEWER -->
+                        <div class="wb-active-q-container" id="wb-active-q-g2"></div>
+
+                        <!-- VIRTUAL KEYBOARD KELOMPOK 2 -->
+                        <div class="wb-keyboard-panel g2-kb" id="kb-panel-g2">
+                            <div class="kb-rows">
+                                <div class="kb-row">
+                                    <button class="kb-key key-opt" data-key="A">A</button>
+                                    <button class="kb-key key-opt" data-key="B">B</button>
+                                    <button class="kb-key key-opt" data-key="C">C</button>
+                                    <button class="kb-key key-opt" data-key="D">D</button>
+                                    <button class="kb-key key-opt" data-key="E">E</button>
+                                    <button class="kb-key key-num" data-key="1">1</button>
+                                    <button class="kb-key key-num" data-key="2">2</button>
+                                    <button class="kb-key key-num" data-key="3">3</button>
+                                    <button class="kb-key key-num" data-key="4">4</button>
+                                    <button class="kb-key key-num" data-key="5">5</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="Q">Q</button>
+                                    <button class="kb-key" data-key="W">W</button>
+                                    <button class="kb-key" data-key="E">E</button>
+                                    <button class="kb-key" data-key="R">R</button>
+                                    <button class="kb-key" data-key="T">T</button>
+                                    <button class="kb-key" data-key="Y">Y</button>
+                                    <button class="kb-key" data-key="U">U</button>
+                                    <button class="kb-key" data-key="I">I</button>
+                                    <button class="kb-key" data-key="O">O</button>
+                                    <button class="kb-key" data-key="P">P</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="A">A</button>
+                                    <button class="kb-key" data-key="S">S</button>
+                                    <button class="kb-key" data-key="D">D</button>
+                                    <button class="kb-key" data-key="F">F</button>
+                                    <button class="kb-key" data-key="G">G</button>
+                                    <button class="kb-key" data-key="H">H</button>
+                                    <button class="kb-key" data-key="J">J</button>
+                                    <button class="kb-key" data-key="K">K</button>
+                                    <button class="kb-key" data-key="L">L</button>
+                                    <button class="kb-key key-num" data-key="0">0</button>
+                                </div>
+                                <div class="kb-row">
+                                    <button class="kb-key" data-key="Z">Z</button>
+                                    <button class="kb-key" data-key="X">X</button>
+                                    <button class="kb-key" data-key="C">C</button>
+                                    <button class="kb-key" data-key="V">V</button>
+                                    <button class="kb-key" data-key="B">B</button>
+                                    <button class="kb-key" data-key="N">N</button>
+                                    <button class="kb-key" data-key="M">M</button>
+                                    <button class="kb-key key-action key-space" data-key="SPACE">Space</button>
+                                    <button class="kb-key key-action key-back" data-key="BACKSPACE">⌫</button>
+                                    <button class="kb-key key-action key-send" data-key="SUBMIT">↵ Kirim</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2463,6 +2661,43 @@ const App = {
         `;
 
         lucide.createIcons();
+
+        // 1. FULLSCREEN TOGGLE LISTENER FOR BOARD
+        const btnWbFs = document.getElementById('btn-wb-fullscreen');
+        if (btnWbFs) {
+            btnWbFs.addEventListener('click', () => {
+                AudioSynth.playClick();
+                const wbWrapper = document.querySelector('.wb-wrapper');
+                if (wbWrapper) {
+                    wbWrapper.classList.toggle('wb-fullscreen');
+                    const isFs = wbWrapper.classList.contains('wb-fullscreen');
+                    const icon = document.getElementById('wb-fs-icon');
+                    if (icon) icon.setAttribute('data-lucide', isFs ? 'minimize' : 'maximize');
+                    const span = btnWbFs.querySelector('span');
+                    if (span) span.textContent = isFs ? 'Keluar Penuh' : 'Layar Penuh';
+                    lucide.createIcons();
+                }
+                FullscreenController.toggle();
+            });
+        }
+
+        // 2. TOGGLE KEYBOARD PANELS
+        const btnToggleKbG1 = document.getElementById('btn-toggle-kb-g1');
+        if (btnToggleKbG1) {
+            btnToggleKbG1.addEventListener('click', () => {
+                AudioSynth.playClick();
+                const panel = document.getElementById('kb-panel-g1');
+                if (panel) panel.classList.toggle('hidden');
+            });
+        }
+        const btnToggleKbG2 = document.getElementById('btn-toggle-kb-g2');
+        if (btnToggleKbG2) {
+            btnToggleKbG2.addEventListener('click', () => {
+                AudioSynth.playClick();
+                const panel = document.getElementById('kb-panel-g2');
+                if (panel) panel.classList.toggle('hidden');
+            });
+        }
 
         const updateGroupProgress = () => {
             const countG1 = Object.keys(wbState.group1).filter(k => wbState.group1[k]).length;
@@ -2486,86 +2721,342 @@ const App = {
             }
         };
 
-        const renderQuestionsForGroup = (groupKey, scrollContainerId) => {
-            const containerEl = document.getElementById(scrollContainerId);
-            if (!containerEl) return;
+        const tileColors = [
+            '#0284c7', '#ef4444', '#f97316', '#16a34a',
+            '#a855f7', '#2563eb', '#06b6d4', '#ea580c',
+            '#3b82f6', '#ec4899', '#10b981', '#f59e0b',
+            '#6366f1', '#d97706', '#0284c7', '#ef4444',
+            '#f97316', '#16a34a', '#a855f7', '#2563eb',
+            '#06b6d4', '#ea580c', '#3b82f6', '#ec4899', '#10b981'
+        ];
 
-            containerEl.innerHTML = '';
+        const renderGroupView = (groupKey) => {
+            const tilesEl = document.getElementById(groupKey === 'group1' ? 'wb-tiles-g1' : 'wb-tiles-g2');
+            const activeQBoxEl = document.getElementById(groupKey === 'group1' ? 'wb-active-q-g1' : 'wb-active-q-g2');
+            if (!tilesEl || !activeQBoxEl) return;
 
-            TP1_QUESTIONS.forEach(q => {
+            const currentActiveId = this.whiteboardActiveQ[groupKey] || 1;
+
+            // 1. Render 25 Wordwall-Style Number Tiles
+            tilesEl.innerHTML = TP1_QUESTIONS.map((q, idx) => {
                 const isLocked = !!wbState[groupKey][q.id];
-                const savedVal = wbInputs[groupKey][q.id];
-                const filledText = savedVal !== undefined ? savedVal : '';
+                const isSelected = (q.id === currentActiveId);
+                const color = tileColors[idx % tileColors.length];
 
-                const card = document.createElement('div');
-                card.className = `wb-q-card ${isLocked ? 'is-locked' : ''}`;
-                card.id = `wb-card-${groupKey}-${q.id}`;
-
-                let placeholderText = '';
-                if (q.type === 'pg') placeholderText = 'A / B / C / D';
-                else if (q.type === 'isian') placeholderText = 'Ketik jawaban isian...';
-                else if (q.type === 'bs') placeholderText = 'B / S';
-                else if (q.type === 'pg_kompleks') placeholderText = 'Gabungan opsi (misal: ABD)';
-                else if (q.type === 'jodoh') placeholderText = 'Pasangan abjad (misal: bcda)';
-
-                card.innerHTML = `
-                    <div class="wb-ans-row">
-                        <div class="wb-ans-left">
-                            <span class="wb-q-num">No. ${q.id}</span>
-                            <span class="wb-q-tag">${q.typeLabel}</span>
-                        </div>
-                        <div class="wb-ans-right">
-                            ${isLocked ? `
-                                <div class="wb-locked-banner-compact">
-                                    <i data-lucide="lock"></i>
-                                    <span>TERKUNCI</span>
-                                </div>
-                            ` : `
-                                <div class="wb-ans-input-wrapper">
-                                    <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm" placeholder="${placeholderText}" value="${filledText}">
-                                    <button class="btn-wb-submit-sm ripple" id="btn-submit-${groupKey}-${q.id}" title="Kirim Jawaban No. ${q.id}">
-                                        <i data-lucide="send"></i>
-                                    </button>
-                                </div>
-                            `}
-                        </div>
-                    </div>
+                return `
+                    <button class="wb-tile ${isLocked ? 'is-locked' : ''} ${isSelected ? 'is-selected' : ''}" 
+                            style="${!isLocked ? `background: ${color};` : ''}"
+                            data-qid="${q.id}"
+                            title="Soal #${q.id} [${q.typeLabel}] ${isLocked ? '(Terkunci)' : ''}">
+                        ${q.id}
+                    </button>
                 `;
+            }).join('');
 
-                containerEl.appendChild(card);
-
-                // Attach live input save & Enter key listeners
-                if (!isLocked) {
-                    const inputEl = card.querySelector(`#input-${groupKey}-${q.id}`);
-                    if (inputEl) {
-                        inputEl.addEventListener('input', (e) => {
-                            wbInputs[groupKey][q.id] = e.target.value;
-                        });
-                        inputEl.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                wbInputs[groupKey][q.id] = e.target.value;
-                                this.verifyAnswer(groupKey, q, scrollContainerId);
-                            }
-                        });
-                    }
-
-                    const submitBtn = card.querySelector(`#btn-submit-${groupKey}-${q.id}`);
-                    if (submitBtn) {
-                        submitBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            this.verifyAnswer(groupKey, q, scrollContainerId);
-                        });
-                    }
-                }
+            // Attach click listener for tiles
+            tilesEl.querySelectorAll('.wb-tile').forEach(tileBtn => {
+                tileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    AudioSynth.playClick();
+                    const qId = parseInt(tileBtn.getAttribute('data-qid'));
+                    this.whiteboardActiveQ[groupKey] = qId;
+                    renderGroupView(groupKey);
+                    
+                    const inputEl = document.getElementById(`input-${groupKey}-${qId}`);
+                    if (inputEl) inputEl.focus();
+                });
             });
 
+            // 2. Render Active Question Details Card
+            const q = TP1_QUESTIONS.find(item => item.id === currentActiveId);
+            const isLocked = !!wbState[groupKey][q.id];
+            const savedVal = wbInputs[groupKey][q.id] !== undefined ? wbInputs[groupKey][q.id] : '';
+
+            let optionsHTML = '';
+            if (q.type === 'pg') {
+                optionsHTML = `
+                    <div class="wb-q-options-grid">
+                        ${q.options.map((opt, idx) => {
+                            const letter = String.fromCharCode(65 + idx);
+                            const isChoiceSelected = (savedVal.toUpperCase() === letter);
+                            return `
+                                <button class="wb-option-card ${isChoiceSelected ? 'is-selected' : ''} ${isLocked ? 'is-disabled' : ''}" data-letter="${letter}">
+                                    <span class="opt-letter">${letter}</span>
+                                    <span class="opt-text">${opt}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else if (q.type === 'pg_kompleks') {
+                optionsHTML = `
+                    <div class="wb-q-options-grid">
+                        ${q.options.map(opt => `
+                            <div class="wb-option-card" style="cursor:default;">
+                                <span class="opt-letter">${opt.id}</span>
+                                <span class="opt-text">${opt.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">💡 Ketik gabungan huruf opsi pilihanmu (misalnya: <strong>ABD</strong>)</p>
+                `;
+            } else if (q.type === 'jodoh') {
+                optionsHTML = `
+                    <div class="wb-matching-grid">
+                        <div class="match-col">
+                            <strong style="color:var(--text-muted); font-size:0.75rem; margin-bottom:0.2rem; display:block;">Pernyataan:</strong>
+                            ${q.leftItems.map(l => `<div class="match-item">${l.label}</div>`).join('')}
+                        </div>
+                        <div class="match-col">
+                            <strong style="color:var(--text-muted); font-size:0.75rem; margin-bottom:0.2rem; display:block;">Pasangan:</strong>
+                            ${q.rightItems.map(r => `<div class="match-item">${r.label}</div>`).join('')}
+                        </div>
+                    </div>
+                    <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">💡 Ketik urutan huruf pasangan (misalnya: <strong>bcda</strong>)</p>
+                `;
+            }
+
+            let placeholderText = '';
+            if (q.type === 'pg') placeholderText = 'Ketik A / B / C / D atau klik opsi di atas...';
+            else if (q.type === 'isian') placeholderText = 'Ketik jawaban isian singkat...';
+            else if (q.type === 'bs') placeholderText = 'Ketik B (Benar) / S (Salah)...';
+            else if (q.type === 'pg_kompleks') placeholderText = 'Gabungan huruf opsi (misal: ABD)...';
+            else if (q.type === 'jodoh') placeholderText = 'Urutan huruf pasangan (misal: bcda)...';
+
+            activeQBoxEl.innerHTML = `
+                <div class="wb-q-active-card card ${isLocked ? 'is-locked-card' : ''}">
+                    <div class="wb-q-card-header">
+                        <div style="display:flex; align-items:center; gap:0.4rem;">
+                            <span class="wb-q-num-badge">Soal #${q.id}</span>
+                            <span class="wb-q-tag">${q.typeLabel}</span>
+                        </div>
+                        ${isLocked ? `
+                            <span class="wb-status-locked-tag"><i data-lucide="lock" style="width:13px; height:13px;"></i> TERKUNCI</span>
+                        ` : `
+                            <span class="wb-status-open-tag"><i data-lucide="edit-3" style="width:13px; height:13px;"></i> Terbuka</span>
+                        `}
+                    </div>
+
+                    <div class="wb-q-text-body">
+                        ${q.text}
+                    </div>
+
+                    ${optionsHTML}
+
+                    <div class="wb-q-card-footer">
+                        ${isLocked ? `
+                            <div class="wb-locked-banner-compact" style="width:100%; justify-content:center; padding:0.5rem; background:rgba(16,185,129,0.2);">
+                                <i data-lucide="check-circle-2" style="width:16px; height:16px;"></i>
+                                <span>JAWABAN BENAR & TERKUNCI</span>
+                            </div>
+                        ` : `
+                            <div class="wb-ans-input-wrapper">
+                                <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm is-active-input" placeholder="${placeholderText}" value="${savedVal}">
+                                <button class="btn-wb-submit-sm ripple" id="btn-submit-${groupKey}-${q.id}" title="Kirim Jawaban Soal #${q.id}">
+                                    <span>Kirim</span>
+                                    <i data-lucide="send"></i>
+                                </button>
+                            </div>
+                        `}
+
+                        <div class="wb-card-nav-row">
+                            <button class="btn-card-nav" id="btn-prev-q-${groupKey}" ${q.id === 1 ? 'disabled' : ''}>
+                                <i data-lucide="chevron-left"></i> Soal #${q.id - 1}
+                            </button>
+                            <span style="font-size:0.75rem; color:var(--text-muted);">Nomor ${q.id} dari ${TP1_QUESTIONS.length}</span>
+                            <button class="btn-card-nav" id="btn-next-q-${groupKey}" ${q.id === 25 ? 'disabled' : ''}>
+                                Soal #${q.id + 1} <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             lucide.createIcons();
+
+            // Event listener for input box changes
+            if (!isLocked) {
+                const inputEl = document.getElementById(`input-${groupKey}-${q.id}`);
+                if (inputEl) {
+                    inputEl.addEventListener('input', (e) => {
+                        wbInputs[groupKey][q.id] = e.target.value;
+                    });
+                    inputEl.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            wbInputs[groupKey][q.id] = e.target.value;
+                            this.verifyAnswer(groupKey, q, groupKey === 'group1' ? 'wb-scroll-g1' : 'wb-scroll-g2');
+                        }
+                    });
+                }
+
+                const submitBtn = document.getElementById(`btn-submit-${groupKey}-${q.id}`);
+                if (submitBtn) {
+                    submitBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.verifyAnswer(groupKey, q, groupKey === 'group1' ? 'wb-scroll-g1' : 'wb-scroll-g2');
+                    });
+                }
+
+                // Option cards clicking (for PG)
+                activeQBoxEl.querySelectorAll('.wb-option-card[data-letter]').forEach(optCard => {
+                    optCard.addEventListener('click', () => {
+                        AudioSynth.playClick();
+                        const letter = optCard.getAttribute('data-letter');
+                        wbInputs[groupKey][q.id] = letter;
+                        if (inputEl) inputEl.value = letter;
+                        activeQBoxEl.querySelectorAll('.wb-option-card[data-letter]').forEach(c => c.classList.remove('is-selected'));
+                        optCard.classList.add('is-selected');
+                    });
+                });
+            }
+
+            // Prev / Next card navigation
+            const prevBtn = document.getElementById(`btn-prev-q-${groupKey}`);
+            const nextBtn = document.getElementById(`btn-next-q-${groupKey}`);
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    AudioSynth.playClick();
+                    if (q.id > 1) {
+                        this.whiteboardActiveQ[groupKey] = q.id - 1;
+                        renderGroupView(groupKey);
+                    }
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    AudioSynth.playClick();
+                    if (q.id < 25) {
+                        this.whiteboardActiveQ[groupKey] = q.id + 1;
+                        renderGroupView(groupKey);
+                    }
+                });
+            }
         };
 
-        renderQuestionsForGroup('group1', 'wb-scroll-g1');
-        renderQuestionsForGroup('group2', 'wb-scroll-g2');
+        // BIND VIRTUAL KEYBOARD HANDLERS FOR EACH GROUP
+        const setupVirtualKeyboard = (groupKey) => {
+            const kbPanel = document.getElementById(`kb-panel-${groupKey === 'group1' ? 'g1' : 'g2'}`);
+            if (!kbPanel) return;
+
+            const findActiveQId = () => {
+                const activeId = this.whiteboardActiveQ[groupKey];
+                if (activeId && !wbState[groupKey][activeId]) {
+                    return activeId;
+                }
+                const firstUnlocked = TP1_QUESTIONS.find(q => !wbState[groupKey][q.id]);
+                if (firstUnlocked) {
+                    this.whiteboardActiveQ[groupKey] = firstUnlocked.id;
+                    return firstUnlocked.id;
+                }
+                return activeId || 1;
+            };
+
+            const updateTargetLabel = () => {
+                const qId = findActiveQId();
+                const label = document.getElementById(`kb-target-${groupKey === 'group1' ? 'g1' : 'g2'}`);
+                if (label) {
+                    if (qId) label.innerText = `Target Keyboard: Soal #${qId}`;
+                    else label.innerText = `Semua Soal Terkunci! 🎉`;
+                }
+            };
+
+            updateTargetLabel();
+
+            kbPanel.querySelectorAll('.kb-key').forEach(keyBtn => {
+                keyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    AudioSynth.playClick();
+
+                    const qId = findActiveQId();
+                    if (!qId) return;
+
+                    const questionObj = TP1_QUESTIONS.find(q => q.id === qId);
+                    const inputEl = document.getElementById(`input-${groupKey}-${qId}`);
+                    const keyVal = keyBtn.getAttribute('data-key');
+                    const scrollContainerId = groupKey === 'group1' ? 'wb-scroll-g1' : 'wb-scroll-g2';
+
+                    if (keyVal === 'SUBMIT') {
+                        if (inputEl) wbInputs[groupKey][qId] = inputEl.value;
+                        this.verifyAnswer(groupKey, questionObj, scrollContainerId);
+                    } else if (keyVal === 'BACKSPACE') {
+                        let current = inputEl ? inputEl.value : (wbInputs[groupKey][qId] || '');
+                        current = current.slice(0, -1);
+                        if (inputEl) inputEl.value = current;
+                        wbInputs[groupKey][qId] = current;
+
+                        const activeQBoxEl = document.getElementById(groupKey === 'group1' ? 'wb-active-q-g1' : 'wb-active-q-g2');
+                        if (activeQBoxEl) {
+                            activeQBoxEl.querySelectorAll('.wb-option-card[data-letter]').forEach(c => {
+                                if (c.getAttribute('data-letter') === current.toUpperCase()) c.classList.add('is-selected');
+                                else c.classList.remove('is-selected');
+                            });
+                        }
+                    } else if (keyVal === 'SPACE') {
+                        let current = inputEl ? inputEl.value : (wbInputs[groupKey][qId] || '');
+                        current += ' ';
+                        if (inputEl) inputEl.value = current;
+                        wbInputs[groupKey][qId] = current;
+                    } else {
+                        let current = inputEl ? inputEl.value : (wbInputs[groupKey][qId] || '');
+                        if (questionObj && questionObj.type === 'pg') {
+                            current = keyVal;
+                        } else {
+                            current += keyVal;
+                        }
+                        if (inputEl) inputEl.value = current;
+                        wbInputs[groupKey][qId] = current;
+
+                        const activeQBoxEl = document.getElementById(groupKey === 'group1' ? 'wb-active-q-g1' : 'wb-active-q-g2');
+                        if (activeQBoxEl) {
+                            activeQBoxEl.querySelectorAll('.wb-option-card[data-letter]').forEach(c => {
+                                if (c.getAttribute('data-letter') === current.toUpperCase()) c.classList.add('is-selected');
+                                else c.classList.remove('is-selected');
+                            });
+                        }
+                    }
+
+                    if (inputEl) {
+                        inputEl.focus();
+                    }
+                });
+            });
+        };
+
+        renderGroupView('group1');
+        renderGroupView('group2');
+        setupVirtualKeyboard('group1');
+        setupVirtualKeyboard('group2');
         updateGroupProgress();
+
+        // Panduan Pengerjaan Modal Event Listeners
+        const btnShowGuide = document.getElementById('btn-show-guide-modal');
+        const btnCloseGuide = document.getElementById('btn-close-guide-modal');
+        const modalGuide = document.getElementById('wb-guide-modal');
+
+        if (btnShowGuide && modalGuide) {
+            btnShowGuide.addEventListener('click', () => {
+                AudioSynth.playClick();
+                modalGuide.classList.remove('hidden');
+            });
+        }
+
+        if (btnCloseGuide && modalGuide) {
+            btnCloseGuide.addEventListener('click', () => {
+                AudioSynth.playClick();
+                modalGuide.classList.add('hidden');
+            });
+        }
+
+        const btnGuidePdf = document.getElementById('btn-download-pdf-modal-guide');
+        if (btnGuidePdf) {
+            btnGuidePdf.addEventListener('click', () => {
+                AudioSynth.playClick();
+                if (modalGuide) modalGuide.classList.add('hidden');
+                this.generateTP1PDF();
+            });
+        }
 
         // Kunci Jawaban Modal Event Listeners
         const btnShowKey = document.getElementById('btn-show-key-modal');
@@ -2642,7 +3133,14 @@ const App = {
         if (isCorrect) {
             AudioSynth.playTriumph();
             this.whiteboardState[groupKey][q.id] = true;
-            
+
+            // Auto-advance target question for virtual keyboard to next unlocked question
+            const nextUnlocked = TP1_QUESTIONS.find(item => item.id > q.id && !this.whiteboardState[groupKey][item.id]) 
+                              || TP1_QUESTIONS.find(item => !this.whiteboardState[groupKey][item.id]);
+            if (nextUnlocked) {
+                this.whiteboardActiveQ[groupKey] = nextUnlocked.id;
+            }
+
             // Re-render question cards & update stats
             this.initInteractiveWhiteboardTP1(document.getElementById('viewport-content'));
 
