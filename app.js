@@ -2851,7 +2851,7 @@ const App = {
                             </div>
                         ` : `
                             <div class="wb-ans-input-wrapper">
-                                <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm is-active-input" placeholder="${placeholderText}" value="${savedVal}" inputmode="none" autocomplete="off">
+                                <input type="text" id="input-${groupKey}-${q.id}" class="wb-text-field-sm is-active-input" placeholder="${placeholderText}" value="${savedVal}" readonly inputmode="none" autocomplete="off">
                                 <button class="btn-wb-submit-sm ripple" id="btn-submit-${groupKey}-${q.id}" title="Kirim Jawaban Soal #${q.id}">
                                     <span>Kirim</span>
                                     <i data-lucide="send"></i>
@@ -3035,6 +3035,51 @@ const App = {
                 e.stopPropagation();
             }, { passive: true });
         });
+
+        // Physical Keyboard Event Listener for IFP / PC
+        if (!this._wbKeyHandlerBound) {
+            this._wbKeyHandlerBound = true;
+            window.addEventListener('keydown', (e) => {
+                const activeSlide = this.currentSlide;
+                if (!activeSlide || activeSlide.visualType !== 'interactive-whiteboard-tp1') return;
+
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && !e.target.readOnly) return;
+
+                const groupKey = 'group1';
+                const qId = this.whiteboardActiveQ[groupKey] || 1;
+                if (this.whiteboardState[groupKey][qId]) return;
+
+                const questionObj = TP1_QUESTIONS.find(q => q.id === qId);
+                const inputEl = document.getElementById(`input-${groupKey}-${qId}`);
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.verifyAnswer(groupKey, questionObj, 'wb-scroll-g1');
+                } else if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    let cur = inputEl ? inputEl.value : (this.whiteboardInputs[groupKey][qId] || '');
+                    cur = cur.slice(0, -1);
+                    if (inputEl) inputEl.value = cur;
+                    this.whiteboardInputs[groupKey][qId] = cur;
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    let cur = inputEl ? inputEl.value : (this.whiteboardInputs[groupKey][qId] || '');
+                    cur += ' ';
+                    if (inputEl) inputEl.value = cur;
+                    this.whiteboardInputs[groupKey][qId] = cur;
+                } else if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+                    e.preventDefault();
+                    let cur = inputEl ? inputEl.value : (this.whiteboardInputs[groupKey][qId] || '');
+                    if (questionObj && questionObj.type === 'pg') {
+                        cur = e.key.toUpperCase();
+                    } else {
+                        cur += e.key;
+                    }
+                    if (inputEl) inputEl.value = cur;
+                    this.whiteboardInputs[groupKey][qId] = cur;
+                }
+            });
+        }
 
         updateGroupProgress();
 
